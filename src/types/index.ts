@@ -1,5 +1,5 @@
-// Типы данных, приходящие через API
-export interface ApiProduct {
+// Типы данных API
+export interface IApiProduct {
   id: string;
   title: string;
   price: number;
@@ -8,8 +8,8 @@ export interface ApiProduct {
   description?: string;
 }
 
-export interface ApiOrder {
-  payment: string;
+export interface IApiOrder {
+  payment: "online" | "cash";
   email: string;
   phone: string;
   address: string;
@@ -17,114 +17,102 @@ export interface ApiOrder {
   items: string[]; // Массив ID товаров
 }
 
-export interface ApiOrderResponse {
+export interface IApiOrderResponse {
   id: string;
   total: number;
 }
 
-// Типы данных для отображения на экране
-export interface Product extends ApiProduct {
-  isInBasket: boolean; // Флаг, указывающий, добавлен ли товар в корзину
+// Базовые типы для Model
+export interface IProduct extends Pick<IApiProduct, "id" | "title" | "price" | "category" | "image"> {
+  isInBasket: boolean;
 }
 
-export interface Order {
-  payment: string;
-  email: string;
-  phone: string;
-  address: string;
-  total: number;
-  items: Product[]; // Массив товаров
+export interface IOrder extends Omit<IApiOrder, "items"> {
+  items: IProduct[];
 }
 
-// Интерфейс API-клиента
-export interface IApiClient {
-  getProducts(): Promise<ApiProduct[]>;
-  postOrder(order: ApiOrder): Promise<ApiOrderResponse>;
-}
-
-// Интерфейсы модели данных
-export interface IProduct {
-  id: string;
-  title: string;
-  price: number;
-  category: string;
-  image: string;
-  description?: string;
-}
-
-export interface IBasket {
-  items: Product[];
-  totalPrice: number;
-  addProduct(product: Product): void;
-  removeProduct(productId: string): void;
-  getTotalPrice(): number;
-  clear(): void;
-}
-
-// Интерфейсы отображений
-export interface IGallery {
-  render(): void;
-  handleProductClick(productId: string): void;
+// Интерфейсы для View
+export interface ICardView {
+  element: HTMLElement;
+  categoryElement: HTMLSpanElement;
+  titleElement: HTMLHeadingElement;
+  imageElement: HTMLImageElement;
+  priceElement: HTMLSpanElement;
+  render(templateId: string): HTMLElement;
+  bindEvents(handler: (id: string) => void): void;
 }
 
 export interface IBasketView {
-  render(): void;
-  handleRemoveClick(productId: string): void;
+  listElement: HTMLUListElement;
+  totalPriceElement: HTMLSpanElement;
+  update(items: IProduct[]): void;
 }
 
-export interface IOrderView {
-  renderStep1(): void;
-  renderStep2(): void;
-  validateStep1(): boolean;
-  validateStep2(): boolean;
-  submitOrder(): void;
-}
-
-// Интерфейсы базовых классов
-export interface IEventEmitter {
-  on(event: string, callback: Function): void;
-  emit(event: string, data?: any): void;
-  off(event: string, callback: Function): void;
-}
-
-export interface IModal {
-  isOpen: boolean;
+export interface IModalView {
   open(content: HTMLElement): void;
   close(): void;
   handleOutsideClick(event: MouseEvent): void;
 }
 
-// Перечисление событий и их интерфейсы
-export interface ProductAddedEvent {
-  product: Product;
+// Интерфейс API-клиента
+export interface IApiClient {
+  getProducts(): Promise<IApiProduct[]>;
+  postOrder(order: IApiOrder): Promise<IApiOrderResponse>;
 }
 
-export interface ProductRemovedEvent {
-  productId: string;
+// Базовые интерфейсы
+export interface IEventEmitter {
+  on(event: string, callback: Function): void;
+  emit(event: string, data?: unknown): void;
+  off(event: string, callback: Function): void;
 }
 
-export interface OrderSubmittedEvent {
-  order: Order;
+// События приложения
+export interface ICardSelectEvent {
+  type: "card:select";
+  data: { productId: string };
 }
 
-export interface ModalEvent {
-  content: HTMLElement;
+export interface IBasketUpdateEvent {
+  type: "basket:update";
+  data: { items: IProduct[] };
 }
 
-// Дополнительные типы и интерфейсы
+export interface IOrderSubmitEvent {
+  type: "order:submit";
+  data: IOrder;
+}
+
+// Утилитарные типы
 export type PaymentMethod = "online" | "cash";
 
-export interface OrderStep1 {
-  payment: PaymentMethod;
-  address: string;
-}
-
-export interface OrderStep2 {
-  email: string;
-  phone: string;
-}
-
-export interface ValidationResult {
+export interface IValidationResult {
   isValid: boolean;
   message?: string;
+}
+
+// Расширенные типы для компонентов
+export type TCardTemplate = "catalog" | "preview" | "basket";
+
+export interface ICardConfig {
+  template: TCardTemplate;
+  onClick?: (productId: string) => void;
+}
+
+// Интерфейсы для моделей
+export interface IProductModel {
+  id: string;
+  title: string;
+  price: number;
+  category: string;
+  image: string;
+  isInBasket: boolean;
+}
+
+export interface IBasketModel {
+  items: IProductModel[];
+  addProduct(product: IProductModel): void;
+  removeProduct(productId: string): void;
+  getTotalPrice(): number;
+  clear(): void;
 }
