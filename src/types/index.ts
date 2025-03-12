@@ -1,63 +1,7 @@
-// Типы данных API
-export interface IApiProduct {
-  id: string;
-  title: string;
-  price: number;
-  category: string;
-  image: string;
-  description?: string;
-}
-
-export interface IApiOrder {
-  payment: "online" | "cash";
-  email: string;
-  phone: string;
-  address: string;
-  total: number;
-  items: string[]; // Массив ID товаров
-}
-
-export interface IApiOrderResponse {
-  id: string;
-  total: number;
-}
-
-// Базовые типы для Model
-export interface IProduct extends Pick<IApiProduct, "id" | "title" | "price" | "category" | "image"> {
-  isInBasket: boolean;
-}
-
-export interface IOrder extends Omit<IApiOrder, "items"> {
-  items: IProduct[];
-}
-
-// Интерфейсы для View
-export interface ICardView {
-  element: HTMLElement;
-  categoryElement: HTMLSpanElement;
-  titleElement: HTMLHeadingElement;
-  imageElement: HTMLImageElement;
-  priceElement: HTMLSpanElement;
-  render(templateId: string): HTMLElement;
-  bindEvents(handler: (id: string) => void): void;
-}
-
-export interface IBasketView {
-  listElement: HTMLUListElement;
-  totalPriceElement: HTMLSpanElement;
-  update(items: IProduct[]): void;
-}
-
-export interface IModalView {
-  open(content: HTMLElement): void;
-  close(): void;
-  handleOutsideClick(event: MouseEvent): void;
-}
-
-// Интерфейс API-клиента
-export interface IApiClient {
-  getProducts(): Promise<IApiProduct[]>;
-  postOrder(order: IApiOrder): Promise<IApiOrderResponse>;
+export interface IApi {
+  getCardItem: (id: string) => Promise<ICardView>;
+  getCardList: () => Promise<ICardView[]>;
+  orderItems: (order: IOrderView) => Promise<IOrderViewResult>;
 }
 
 // Базовые интерфейсы
@@ -65,54 +9,105 @@ export interface IEventEmitter {
   on(event: string, callback: Function): void;
   emit(event: string, data?: unknown): void;
   off(event: string, callback: Function): void;
+  onAll(callback: (event: string, data?: unknown) => void): void; 
+  offAll(): void;
 }
 
-// События приложения
-export interface ICardSelectEvent {
-  type: "card:select";
-  data: { productId: string };
+export interface IAppState {
+  catalog: ICardView[];
+  basket: string[];
+  preview: ICardView | null;
+  order: IOrderView | null;
+  formErrors: FormErrors;
 }
 
-export interface IBasketUpdateEvent {
-  type: "basket:update";
-  data: { items: IProduct[] };
+export interface IPageView {
+  counter: number;
+  gallery: HTMLElement[];
 }
 
-export interface IOrderSubmitEvent {
-  type: "order:submit";
-  data: IOrder;
-}
-
-// Утилитарные типы
-export type PaymentMethod = "online" | "cash";
-
-export interface IValidationResult {
-  isValid: boolean;
-  message?: string;
-}
-
-// Расширенные типы для компонентов
-export type TCardTemplate = "catalog" | "preview" | "basket";
-
-export interface ICardConfig {
-  template: TCardTemplate;
-  onClick?: (productId: string) => void;
-}
-
-// Интерфейсы для моделей
-export interface IProductModel {
+export interface ICardView {
   id: string;
   title: string;
-  price: number;
-  category: string;
+  description: string;
+  price: number | null;
   image: string;
-  isInBasket: boolean;
+  category: CardType;
+  button: string;
 }
 
-export interface IBasketModel {
-  items: IProductModel[];
-  addProduct(product: IProductModel): void;
-  removeProduct(productId: string): void;
-  getTotalPrice(): number;
-  clear(): void;
+export interface ICardViewActions {
+  onClick: (event: MouseEvent) => void;
 }
+
+export interface IModalData {
+  open(content: HTMLElement): void;
+  close(): void;
+  content: HTMLElement;
+}
+
+export interface IFormView {
+  valid: boolean;
+  errors: string[];
+}
+
+export interface IContactsView extends IFormView {
+  email: HTMLInputElement;
+  phone: HTMLInputElement;
+}
+
+export interface IOrderView extends IFormView {
+  payment?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  total?: number;
+  items?: string[];
+  togglePayButton?(method: string): void; // методы для управления UI
+  clearPayButton?(): void;
+}
+
+export interface IOrderViewResult {
+  id: string;
+  total: number;
+}
+
+export interface IDoneView {
+  close: HTMLButtonElement;
+  description: string;
+  total: number;
+}
+
+export interface IDoneViewActions {
+  onClick: () => void;
+}
+
+export interface IBasketView {
+  items: CardBasketView[];
+  total: number | null;
+}
+
+export interface IComponent<T> {
+  toggleClass(className: string, force?: boolean): void;
+  setText(text: string): void;
+  setImage(src: string, alt?: string): void;
+  setDisable(state: boolean): void;
+  setVisible(): void;
+  setHidden(): void;
+  render(): HTMLElement;
+}
+
+export interface IModel<T> {
+  emitChanges(event: string, payload?: unknown): void;
+}
+
+export type CardBasketView = Pick<ICardView, 'id' | 'title' | 'price'> & { index: number };
+
+export type CardType =
+  | 'другое'
+  | 'софт-скил'
+  | 'дополнительное'
+  | 'кнопка'
+  | 'хард-скил';
+
+export type FormErrors = Partial<Record<keyof IOrderView, string>>;
