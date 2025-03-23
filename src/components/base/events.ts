@@ -3,8 +3,8 @@
 type EventName = string | RegExp;
 type Subscriber = Function;
 type EmitterEvent = {
-    eventName: string,
-    data: unknown
+    eventName: string;
+    data: unknown;
 };
 
 export interface IEvents {
@@ -19,7 +19,7 @@ export interface IEvents {
  * или слушать события по шаблону например
  */
 export class EventEmitter implements IEvents {
-    _events: Map<EventName, Set<Subscriber>>;
+    private _events: Map<EventName, Set<Subscriber>>;
 
     constructor() {
         this._events = new Map<EventName, Set<Subscriber>>();

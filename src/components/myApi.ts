@@ -1,43 +1,47 @@
-import { IApi, ICardView, IOrderView, IOrderViewResult } from '../types';
+import {Api, ApiListResponse} from "./base/api";
+import {ICardView, IOrderView, IOrderViewResult} from "../types/index";
 
-export class myApi implements IApi {
-    constructor(private readonly cdn: string, private readonly api: string) {}
+export class AuctionAPI extends Api {
+    readonly cdn: string;
 
-    async getCardList(): Promise<ICardView[]> {
-        const response = await fetch(`${this.api}/items`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch card list');
-        }
-        const data = await response.json();
-        return data.items.map((item: ICardView) => ({
-            ...item,
-            image: this.cdn + item.image
-        }));
+    constructor(cdn: string, baseUrl: string, options?: RequestInit) {
+        super(baseUrl, options);
+        this.cdn = cdn;
     }
 
-    async getCardItem(id: string): Promise<ICardView> {
-        const response = await fetch(`${this.api}/items/${id}`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch card item');
-        }
-        const item = await response.json();
-        return {
-            ...item,
-            image: this.cdn + item.image
-        };
+    getCardItem(id: string): Promise<ICardView> {
+        return this.get(`/lot/${id}`).then(
+            (item: ICardView) => ({
+                ...item,
+                image: this.cdn + item.image,
+            })
+        );
     }
 
-    async orderItems(order: IOrderView): Promise<IOrderViewResult> {
-        const response = await fetch(`${this.api}/order`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(order),
-        });
-        if (!response.ok) {
-            throw new Error('Failed to order items');
-        }
-        return await response.json();
+    getLotUpdate(id: string): Promise<ICardView> {
+        return this.get(`/lot/${id}/_auction`).then(
+            (data: ICardView) => data
+        );
     }
-} 
+
+    getCardList(): Promise<ICardView[]> {
+        return this.get('/lot').then((data: ApiListResponse<ICardView>) =>
+            data.items.map((item) => ({
+                ...item,
+                image: this.cdn + item.image
+            }))
+        );
+    }
+
+    placeBid(id: string, price: number): Promise<ICardView> {
+        return this.post(`/lot/${id}/_bid`, { price }).then(
+            (data: ICardView) => data
+        );
+    }
+
+    orderItems(order: IOrderView): Promise<IOrderViewResult> {
+        return this.post('/order', order).then(
+            (data: IOrderViewResult) => data
+        );
+    }
+}

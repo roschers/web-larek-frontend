@@ -1,87 +1,135 @@
-import { IComponent, IProduct } from '../types';
+import { ICardView, CardBasketView, ICardViewActions } from '../types';
+import { Component } from './base/Component';
+import { ensureElement, createElement } from '../utils/utils';
 
-// Базовый класс для карточек
-export class BaseCard implements IComponent {
-    protected _element: HTMLElement;
-    protected _product: IProduct;
+export const categories = new Map([
+	['софт-скил', 'card__category_soft'],
+	['хард-скил', 'card__category_hard'],
+	['другое', 'card__category_other'],
+	['дополнительное', 'card__category_additional'],
+	['кнопка', 'card__category_button'],
+]);
 
-    constructor(product: IProduct) {
-        this._element = document.createElement('div');
-        this._element.classList.add('card');
-        this._product = product;
-    }
+export class Card extends Component<ICardView> {
+	protected _title: HTMLElement;
+	protected _price: HTMLElement;
+	protected _image: HTMLImageElement;
+	protected _description: HTMLElement;
+	protected _category: HTMLElement;
+	protected _button: HTMLButtonElement;
 
-    render(): HTMLElement {
-        this._element.innerHTML = this.getTemplate();
-        return this._element;
-    }
+	constructor(container: HTMLElement, actions?: ICardViewActions) {
+		super(container);
 
-    toggleClass(className: string, force?: boolean): void {
-        this._element.classList.toggle(className, force);
-    }
+		this._title = ensureElement<HTMLElement>('.card__title', this.container);
+		this._price = ensureElement<HTMLElement>('.card__price', this.container);
+		this._image = ensureElement<HTMLImageElement>('.card__image', this.container);
+		this._description = ensureElement<HTMLElement>('.card__text', this.container);
+		this._category = ensureElement<HTMLElement>('.card__category', this.container);
+		this._button = container.querySelector('.button');
 
-    setText(text: string): void {
-        this._element.textContent = text;
-    }
+		if (actions?.onClick) {
+			if (this._button) {
+				this._button.addEventListener('click', actions.onClick);
+			} else {
+				container.addEventListener('click', actions.onClick);
+			}
+		}
+	}
 
-    setImage(src: string, alt?: string): void {
-        const img = document.createElement('img');
-        img.src = src;
-        if (alt) img.alt = alt;
-        this._element.innerHTML = '';
-        this._element.appendChild(img);
-    }
+	set id(value: string) {
+		this.container.dataset.id = value;
+	}
+	get id(): string {
+		return this.container.dataset.id || '';
+	}
 
-    setDisable(state: boolean): void {
-        this._element.classList.toggle('card--disabled', state);
-    }
+	set title(value: string) {
+		this.setText(this._title, value);
+	}
 
-    setVisible(): void {
-        this._element.classList.add('card--visible');
-    }
+	get title() {
+		return this._title.textContent || '';
+	}
 
-    setHidden(): void {
-        this._element.classList.remove('card--visible');
-    }
+	set description(value: string) {
+		this.setText(this._description, value);
+	}
 
-    protected getTemplate(): string {
-        return `
-            <span class="card__category card__category_${this._product.category}">${this._product.category}</span>
-            <h2 class="card__title">${this._product.title}</h2>
-            <img class="card__image" src="${this._product.image}" alt="${this._product.title}" />
-            <span class="card__price">${this._product.price ? `${this._product.price} синапсов` : 'Бесценно'}</span>
-        `;
-    }
+	get description() {
+		return this._description.textContent || '';
+	}
+
+	set price(value: number | null) {
+		if (value === null) {
+			this.setText(this._price, 'Бесценно');
+		} else {
+			this.setText(this._price, `${value} синапсов`);
+		}
+	}
+
+	get price() {
+		const priceText = this._price.textContent;
+		if (priceText === 'Бесценно') return null;
+		return parseInt(priceText?.replace(' синапсов', '') || '0', 10);
+	}
+
+	set image(value: string) {
+		this.setImage(this._image, value, '');
+	}
+
+	set category(value: string) {
+		this.setText(this._category, value);
+		const categoryClass = categories.get(value);
+		if (categoryClass) {
+			this._category.classList.add(categoryClass);
+		}
+	}
+
+	get category() {
+		return this._category.textContent || '';
+	}
+
+	set button(value: string) {
+		if (this._button) {
+			this._button.disabled = value === 'В корзине';
+			this.setText(this._button, value);
+		}
+	}
+
+	render(data: ICardView): HTMLElement {
+		super.render(data);
+		this.title = data.title;
+		this.price = data.price;
+		this.image = data.image;
+		this.description = data.description || '';
+		this.category = data.category;
+		this.button = data.button;
+		return this.container;
+	}
 }
 
-// Карточка в каталоге
-export class CatalogCard extends BaseCard {
-    constructor(protected _product: IProduct, private _onClick: (product: IProduct) => void) {
-        super(_product);
-        this._element.addEventListener('click', () => this._onClick(this._product));
-    }
-}
+export class BasketCard extends Card {
+	protected _index: HTMLElement;
+	protected _deleteButton: HTMLButtonElement;
 
-// Карточка в корзине
-export class BasketCard extends BaseCard {
-    constructor(product: IProduct, private _onRemove: (id: string) => void) {
-        super(product);
-        this._element.classList.add('card_compact');
-    }
+	constructor(container: HTMLElement, actions?: ICardViewActions) {
+		super(container, actions);
+		this._index = ensureElement<HTMLElement>('.basket__item-index', this.container);
+		this._deleteButton = ensureElement<HTMLButtonElement>('.basket__item-delete', this.container);
 
-    protected getTemplate(): string {
-        return `
-            <h2 class="card__title">${this._product.title}</h2>
-            <span class="card__price">${this._product.price} синапсов</span>
-            <button class="card__remove" type="button">✕</button>
-        `;
-    }
+		if (actions?.onClick) {
+			this._deleteButton.addEventListener('click', actions.onClick);
+		}
+	}
 
-    render(): HTMLElement {
-        const element = super.render();
-        element.querySelector('.card__remove')?.addEventListener('click', () => {
-            this._onRemove(this._product.id);
-        });
-        return element;
-    }
+	set index(value: number) {
+		this.setText(this._index, value.toString());
+	}
+
+	render(data: CardBasketView): HTMLElement {
+		this.setText(this._title, data.title);
+		this.setText(this._price, `${data.price} синапсов`);
+		return this.container;
+	}
 }
