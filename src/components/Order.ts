@@ -66,4 +66,3 @@ export class Contacts extends Form<IOrder> {
 		this._phone.value = value;
 	}
 }
-}
