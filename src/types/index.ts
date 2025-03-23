@@ -38,9 +38,10 @@ export interface IAuction {
  
 export interface IAppState { 
     catalog: ICardView[];
-    basket: ICardView[];
-    preview: string | null;
+    basket: string[];
+    preview: ICardView | null;
     order: IOrderView | null;
+    formErrors: FormErrors;
 } 
  
 export interface IPageView { 
@@ -123,7 +124,11 @@ export interface ISuccessViewActions {
 // } 
  
 export type CardBasketView = Pick<ICardView, 'id' | 'title' | 'price'> & {
-  isMyBid: boolean
+  index: number;
+  isMyBid: boolean;
+  image: string;
+  category: CardType;
+  button: string;
 }; 
  
 export type CardType = 

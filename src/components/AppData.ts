@@ -1,7 +1,12 @@
 import { Model } from "./base/Model";
 import { ICardView, IOrderView, IAppState, FormErrors, CardBasketView } from "../types/index";
+import { IEvents } from "./base/events";
 
 export class AppData extends Model<IAppState> {
+    constructor(events: IEvents, initialState: IAppState) {
+        super(events, initialState);
+    }
+
     catalog: ICardView[] = [];
     basket: ICardView[] = [];
     preview: string | null = null;
@@ -19,7 +24,7 @@ export class AppData extends Model<IAppState> {
     formErrors: FormErrors = {};
 
     toggleBasketState(item: ICardView) {
-        return !this.basket.some((card) => card.id === item.id)
+        return !this.state.basket.includes(item.id)
             ? this.addToBasket(item)
             : this.deleteFromBasket(item);
     }

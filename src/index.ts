@@ -31,7 +31,13 @@ const successTemplate = ensureElement<HTMLTemplateElement>('#success');
 const window = ensureElement<HTMLElement>('#modal-container');
 const pageBody = document.body;
 
-const appData = new AppData({}, events);
+const appData = new AppData(events, {
+    catalog: [],
+    basket: [],
+    preview: null,
+    order: null,
+    formErrors: {}
+});
 
 const page = new Page(pageBody, events);
 const modal = new Modal(window, events);
@@ -107,7 +113,7 @@ events.on('modal:close', () => {
 events.on('basket:changed', () => {
     page.counter = appData.basket.length;
     basket.total = appData.getTotalPrice();
-    basket.items = appData.basket.map((basketCard: ICardView) => {
+    basket.items = appData.basket.map((basketCard: ICardView, index: number) => {
         const newBasketCard = new BasketCard(cloneTemplate(cardBasketTemplate), {
             onClick: () => {
                 appData.deleteFromBasket(basketCard);
@@ -117,7 +123,11 @@ events.on('basket:changed', () => {
             id: basketCard.id,
             title: basketCard.title,
             price: basketCard.price || 0,
-            isMyBid: false
+            index,
+            isMyBid: false,
+            image: basketCard.image,
+            category: basketCard.category,
+            button: appData.getButtonStatus(basketCard)
         });
     });
 });
