@@ -1,42 +1,57 @@
+import { IForm } from "../../types/types"
+import { ensureElement } from '../../utils/utils';
 import { Component } from '../base/Component';
-import { createElement, ensureElement } from '../../utils/utils';
 import { IEvents } from '../base/events';
-import { IBasketView } from '../../types';
 
-export class Basket extends Component<IBasketView> {
-	protected _list: HTMLElement;
-	protected _total: HTMLElement;
-	protected _button: HTMLElement;
+export class Form<T> extends Component<IForm> {
+	protected _submit: HTMLButtonElement;
+	protected _errors: HTMLElement;
 
-	constructor(container: HTMLElement, protected events: IEvents) {
+	constructor(protected container: HTMLFormElement, protected events: IEvents) {
 		super(container);
 
-		this._list = ensureElement<HTMLElement>('.basket__list', this.container);
-		this._total = this.container.querySelector('.basket__price');
-		this._button = this.container.querySelector('.basket__button');
+		this._submit = ensureElement<HTMLButtonElement>(
+			'button[type=submit]',
+			this.container
+		);
+		this._errors = ensureElement<HTMLElement>('.form__errors', this.container);
 
-		if (this._button) {
-			this._button.addEventListener('click', () => {
-				events.emit('order:open');
-			});
-		}
+		this.container.addEventListener('input', (evt: Event) => {
+			const target = evt.target as HTMLInputElement;
+			const field = target.name as keyof T;
+			const value = target.value;
+			this.onInputChange(field, value);
+		});
 
-		this.items = [];
+		this.container.addEventListener('submit', (evt: Event) => {
+			evt.preventDefault();
+			this.events.emit(`${this.container.name}:submit`);
+		});
 	}
 
-	set items(items: HTMLElement[]) {
-		if (items.length) {
-			this._list.replaceChildren(...items);
-			this.setDisabled(this._button, false);
-		} else {
-			this._list.replaceChildren(
-				createElement('p', { textContent: 'Товары еще не добавлены в корзину' })
-			);
-			this.setDisabled(this._button, true);
-		}
+	set valid(value: boolean) {
+		this._submit.disabled = !value;
 	}
 
-	set total(total: number) {
-		this.setText(this._total, `${total} синапсов`);
+	set errors(value: string) {
+		this.setText(this._errors, value);
+	}
+
+	protected onInputChange(field: keyof T, value: string) {
+		this.events.emit(`order.${String(field)}:changed`, {
+			field,
+			value,
+		});
+	}
+
+	clearValue() {
+		this.container.reset();
+	}
+
+	render(state: Partial<T> & IForm) {
+		const { valid, errors, ...inputs } = state;
+		super.render({ valid, errors });
+		Object.assign(this, inputs);
+		return this.container;
 	}
 }

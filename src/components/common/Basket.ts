@@ -1,9 +1,9 @@
 import { Component } from '../base/Component';
 import { createElement, ensureElement } from '../../utils/utils';
 import { IEvents } from '../base/events';
-import { IBasketView } from '../../types/index';
+import { IBasket } from '../../types/types';
 
-export class Basket extends Component<IBasketView> {
+export class Basket extends Component<IBasket> {
 	protected _list: HTMLElement;
 	protected _total: HTMLElement;
 	protected _button: HTMLElement;
@@ -12,8 +12,8 @@ export class Basket extends Component<IBasketView> {
 		super(container);
 
 		this._list = ensureElement<HTMLElement>('.basket__list', this.container);
-		this._total = ensureElement<HTMLElement>('.basket__price', this.container);
-		this._button = ensureElement<HTMLElement>('.basket__button', this.container);
+		this._total = this.container.querySelector('.basket__price');
+		this._button = this.container.querySelector('.basket__button');
 
 		if (this._button) {
 			this._button.addEventListener('click', () => {
@@ -26,12 +26,10 @@ export class Basket extends Component<IBasketView> {
 
 	set items(items: HTMLElement[]) {
 		if (items.length) {
-			this._list.innerHTML = '';
-			this._list.append(...items);
+			this._list.replaceChildren(...items);
 			this.setDisabled(this._button, false);
 		} else {
-			this._list.innerHTML = '';
-			this._list.append(
+			this._list.replaceChildren(
 				createElement('p', { textContent: 'Товары еще не добавлены в корзину' })
 			);
 			this.setDisabled(this._button, true);

@@ -1,40 +1,38 @@
 import { Model } from "./base/Model";
-import { ICardView, IOrderView, IAppState, FormErrors, CardBasketView } from "../types/index";
+import { ICard, IOrder, IAppState, FormErrors } from "../types/types";
 import { IEvents } from "./base/events";
 
 export class AppData extends Model<IAppState> {
-    constructor(events: IEvents, initialState: IAppState) {
-        super(events, initialState);
+    constructor(initialState: Partial<IAppState>, events: IEvents) {
+        super(initialState, events);
     }
 
-    catalog: ICardView[] = [];
-    basket: ICardView[] = [];
+    catalog: ICard[] = [];
+    basket: ICard[] = [];
     preview: string | null = null;
-    order: IOrderView | null = {
+    order: IOrder | null = {
         total: 0,
         items: [],
         email: '',
         phone: '',
         address: '',
         payment: '',
-        valid: false,
-        errors: []
     };
 
     formErrors: FormErrors = {};
 
-    toggleBasketState(item: ICardView) {
-        return !this.state.basket.includes(item.id)
+    toggleBasketState(item: ICard) {
+        return !this.basket.some((card) => card.id === item.id)
             ? this.addToBasket(item)
             : this.deleteFromBasket(item);
     }
 
-    addToBasket(item: ICardView) {
+    addToBasket(item: ICard) {
         this.basket = [...this.basket, item];
         this.emitChanges('basket:changed');
     }
 
-    deleteFromBasket(item: ICardView) {
+    deleteFromBasket(item: ICard) {
         this.basket = this.basket.filter((card) => card.id !== item.id);
         this.emitChanges('basket:changed');
     }
@@ -52,41 +50,43 @@ export class AppData extends Model<IAppState> {
             phone: '',
             address: '',
             payment: '',
-            valid: false,
-            errors: []
         };
     }
 
     getTotalPrice() {
-        return this.basket.reduce((total, card) => total + (card.price || 0), 0);
+        return this.basket.reduce((total, card) => total + card.price, 0);
     }
 
     getCountBasketProducts() {
         return this.basket.length;
     }
 
-    getButtonStatus(item: ICardView) {
+    getButtonStatus(item: ICard) {
         if (item.price === null) {
             return 'Не для продажи';
         }
-        if (!this.basket.some((card) => card.id === item.id)) {
+        if (!this.basket.some((card) => card.id == item.id)) {
             return 'Добавить в корзину';
         } else {
             return 'Убрать из корзины';
         }
     }
 
-    setCatalog(items: ICardView[]) {
-        this.catalog = items;
+    getCardIndex(item: ICard) {
+        return Number(this.basket.indexOf(item)) + 1;
+    }
+
+    setCatalog(items: ICard[]) {
+        items.forEach((item) => (this.catalog = [...this.catalog, item]));
         this.emitChanges('cards:changed', { catalog: this.catalog });
     }
 
-    setPreview(item: ICardView) {
+    setPreview(item: ICard) {
         this.preview = item.id;
         this.emitChanges('preview:changed', { preview: item });
     }
 
-    setOrderField<K extends keyof IOrderView>(field: K, value: IOrderView[K]) {
+    setOrderField<K extends keyof IOrder>(field: K, value: IOrder[K]) {
         if (this.order) {
             this.order[field] = value;
             this.validateOrder();
@@ -94,49 +94,39 @@ export class AppData extends Model<IAppState> {
     }
 
     setOrderPayment(value: string) {
-        if (this.order) {
-            this.order.payment = value;
-        }
+        this.order.payment = value;
     }
 
     setOrderAddress(value: string) {
-        if (this.order) {
-            this.order.address = value;
-        }
+        this.order.address = value;
     }
 
     setOrderPhone(value: string) {
-        if (this.order) {
-            this.order.phone = value;
-        }
+        this.order.phone = value;
     }
 
     setOrderEmail(value: string) {
-        if (this.order) {
-            this.order.email = value;
-        }
+        this.order.email = value;
     }
 
     setBasketToOrder() {
-        if (this.order) {
-            this.order.items = this.basket.map((card) => card.id);
-            this.order.total = this.getTotalPrice();
-        }
+        this.order.items = this.basket.map((card) => card.id);
+        this.order.total = this.getTotalPrice();
     }
 
     validateOrder() {
         const errors: typeof this.formErrors = {};
 
-        if (!this.order?.email) {
+        if (!this.order.email) {
             errors.email = `Необходимо указать email`;
         }
-        if (!this.order?.phone) {
+        if (!this.order.phone) {
             errors.phone = `Необходимо указать номер телефона`;
         }
-        if (!this.order?.address) {
+        if (!this.order.address) {
             errors.address = `Необходимо указать адрес`;
         }
-        if (!this.order?.payment) {
+        if (!this.order.payment) {
             errors.payment = `Необходимо указать способ оплаты`;
         }
 

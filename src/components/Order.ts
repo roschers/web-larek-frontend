@@ -1,125 +1,69 @@
-import { Component } from './base/Component';
-import { IOrderView, IContactsView } from '../types';
-import { ensureElement } from '../utils/utils';
+import { IOrder } from '../types/types';
 import { IEvents } from './base/events';
+import { Form } from './common/Form';
 
-export class Order extends Component<IOrderView> {
-	protected _button: HTMLButtonElement;
+export class Order extends Form<IOrder> {
 	protected _address: HTMLInputElement;
-	protected _payment: HTMLButtonElement[];
-	protected _errors: HTMLElement;
+	protected buttonNal: HTMLButtonElement;
+	protected buttonOnline: HTMLButtonElement;
 
-	constructor(container: HTMLElement, protected events: IEvents) {
-		super(container);
+	constructor(protected container: HTMLFormElement, protected events: IEvents) {
+		super(container, events);
+		this._address = container.elements.namedItem('address') as HTMLInputElement;
 
-		this._button = ensureElement<HTMLButtonElement>('button[type="submit"]', this.container);
-		this._address = ensureElement<HTMLInputElement>('input[name="address"]', this.container);
-		this._payment = Array.from(this.container.querySelectorAll('.order__buttons .button_alt'));
-		this._errors = ensureElement<HTMLElement>('.form__errors', this.container);
+		this.buttonOnline = container.elements.namedItem(
+			'card'
+		) as HTMLButtonElement;
 
-		if (this._address) {
-			this._address.addEventListener('input', () => {
-				this.events.emit('order.address:changed', {
-					field: 'address',
-					value: this._address.value
+		this.buttonNal = container.elements.namedItem('cash') as HTMLButtonElement;
+
+		if (this.buttonOnline) {
+			this.buttonOnline.addEventListener('click', () => {
+				events.emit(`order:changed`, {
+					payment: this.buttonOnline.name,
+					button: this.buttonOnline,
 				});
 			});
 		}
 
-		this._payment.forEach(button => {
-			button.addEventListener('click', () => {
-				this.events.emit('order:changed', {
-					payment: button.name,
-					button: button
+		if (this.buttonNal) {
+			this.buttonNal.addEventListener('click', () => {
+				events.emit(`order:changed`, {
+					payment: this.buttonNal.name,
+					button: this.buttonNal,
 				});
 			});
-		});
-
-		this._button.addEventListener('click', (e) => {
-			e.preventDefault();
-			this.events.emit('order:submit');
-		});
+		}
 	}
 
-	set valid(value: boolean) {
-		this._button.disabled = !value;
+	set address(value: string) {
+		this._address.value = value;
 	}
 
-	set errors(value: string) {
-		this.setText(this._errors, value);
+	togglePayButton(value: HTMLElement) {
+		this.clearPayButton();
+		this.toggleClass(value, 'button_alt-active', true);
 	}
 
 	clearPayButton() {
-		this._payment.forEach(button => {
-			button.classList.remove('button_alt-active');
-		});
-	}
-
-	togglePayButton(button: HTMLElement) {
-		this._payment.forEach(btn => {
-			btn.classList.remove('button_alt-active');
-		});
-		button.classList.add('button_alt-active');
-	}
-
-	render(data: IOrderView): HTMLElement {
-		super.render(data);
-		this.valid = data.valid;
-		this.errors = data.errors.join('; ');
-		return this.container;
+		this.toggleClass(this.buttonNal, 'button_alt-active', false);
+		this.toggleClass(this.buttonOnline, 'button_alt-active', false);
 	}
 }
 
-export class Contacts extends Component<IContactsView> {
-	protected _button: HTMLButtonElement;
+export class Contacts extends Form<IOrder> {
 	protected _email: HTMLInputElement;
 	protected _phone: HTMLInputElement;
-	protected _errors: HTMLElement;
-
-	constructor(container: HTMLElement, protected events: IEvents) {
-		super(container);
-
-		this._button = ensureElement<HTMLButtonElement>('button[type="submit"]', this.container);
-		this._email = ensureElement<HTMLInputElement>('input[name="email"]', this.container);
-		this._phone = ensureElement<HTMLInputElement>('input[name="phone"]', this.container);
-		this._errors = ensureElement<HTMLElement>('.form__errors', this.container);
-
-		if (this._email) {
-			this._email.addEventListener('input', () => {
-				this.events.emit('contacts.email:changed', {
-					field: 'email',
-					value: this._email.value
-				});
-			});
-		}
-
-		if (this._phone) {
-			this._phone.addEventListener('input', () => {
-				this.events.emit('contacts.phone:changed', {
-					field: 'phone',
-					value: this._phone.value
-				});
-			});
-		}
-
-		this._button.addEventListener('click', (e) => {
-			e.preventDefault();
-			this.events.emit('contacts:submit');
-		});
+	constructor(protected container: HTMLFormElement, protected events: IEvents) {
+		super(container, events);
+		this._email = container.elements.namedItem('email') as HTMLInputElement;
+		this._phone = container.elements.namedItem('phone') as HTMLInputElement;
 	}
-
-	set valid(value: boolean) {
-		this._button.disabled = !value;
+	set email(value: string) {
+		this._email.value = value;
 	}
-
-	set errors(value: string) {
-		this.setText(this._errors, value);
+	set phone(value: string) {
+		this._phone.value = value;
 	}
-
-	render(data: IContactsView): HTMLElement {
-		super.render(data);
-		this.valid = data.valid;
-		this.errors = data.errors.join('; ');
-		return this.container;
-	}
+}
 }

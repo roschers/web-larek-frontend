@@ -2,19 +2,19 @@ import './scss/styles.scss';
 
 import { AppData } from './components/AppData';
 import { BasketCard, Card } from './components/Card';
-import { AuctionAPI } from './components/myApi';
+import { myApi } from './components/myApi';
 import { Page } from './components/Page';
 import { EventEmitter } from './components/base/events';
 import { Basket } from './components/common/Basket';
 import { Modal } from './components/common/Modal';
 import { Order, Contacts } from './components/Order';
 import { Success } from './components/common/Success';
-import { ICardView, IOrderView, CardBasketView } from './types/index';
+import { ICard, IOrder } from './types/types';
 import { API_URL, CDN_URL } from './utils/constants';
 import { cloneTemplate, ensureElement } from './utils/utils';
 
 const events = new EventEmitter();
-const api = new AuctionAPI(CDN_URL, API_URL);
+const api = new myApi(CDN_URL, API_URL);
 
 events.onAll(({ eventName, data }) => {
     console.log(eventName, data);
@@ -31,13 +31,12 @@ const successTemplate = ensureElement<HTMLTemplateElement>('#success');
 const window = ensureElement<HTMLElement>('#modal-container');
 const pageBody = document.body;
 
-const appData = new AppData(events, {
+const appData = new AppData({
     catalog: [],
     basket: [],
     preview: null,
-    order: null,
-    formErrors: {}
-});
+    order: null
+}, events);
 
 const page = new Page(pageBody, events);
 const modal = new Modal(window, events);
@@ -47,7 +46,7 @@ const order = new Order(cloneTemplate(orderTemplate), events);
 const contacts = new Contacts(cloneTemplate(contacsTemplate), events);
 
 api.getCardList()
-.then((cards: ICardView[]) => {
+.then((cards: ICard[]) => {
     appData.setCatalog(cards);
 })
 .catch((err) => {
@@ -56,7 +55,7 @@ api.getCardList()
 
 events.on('cards:changed', () => {
     page.counter = appData.basket.length;
-    page.gallery = appData.catalog.map((item: ICardView) => {
+    page.gallery = appData.catalog.map((item) => {
         const card = new Card(cloneTemplate(cardCatalogTemplate), {
             onClick: () => {
                 events.emit('preview:changed', item);
@@ -66,11 +65,11 @@ events.on('cards:changed', () => {
     });
 });
 
-events.on('card:selected', (item: ICardView) => {
+events.on('card:selected', (item: ICard) => {
     appData.setPreview(item);
 });
 
-events.on('preview:changed', (item: ICardView) => {
+events.on('preview:changed', (item: ICard) => {
     const card = new Card(cloneTemplate(cardPreviewTemplate), {
         onClick: () => {
             events.emit('card:basket', item);
@@ -89,10 +88,9 @@ events.on('preview:changed', (item: ICardView) => {
             button: appData.getButtonStatus(item),
         }),
     });
-    modal.open();
 });
 
-events.on('card:basket', (item: ICardView) => {
+events.on('card:basket', (item: ICard) => {
     appData.toggleBasketState(item);
 });
 
@@ -113,21 +111,16 @@ events.on('modal:close', () => {
 events.on('basket:changed', () => {
     page.counter = appData.basket.length;
     basket.total = appData.getTotalPrice();
-    basket.items = appData.basket.map((basketCard: ICardView, index: number) => {
+    basket.items = appData.basket.map((basketCard) => {
         const newBasketCard = new BasketCard(cloneTemplate(cardBasketTemplate), {
             onClick: () => {
                 appData.deleteFromBasket(basketCard);
             },
         });
+        newBasketCard.index = appData.getCardIndex(basketCard);
         return newBasketCard.render({
-            id: basketCard.id,
             title: basketCard.title,
-            price: basketCard.price || 0,
-            index,
-            isMyBid: false,
-            image: basketCard.image,
-            category: basketCard.category,
-            button: appData.getButtonStatus(basketCard)
+            price: basketCard.price,
         });
     });
 });
@@ -139,9 +132,6 @@ events.on('order:open', () => {
             address: '',
             valid: false,
             errors: [],
-            payment: '',
-            email: '',
-            phone: ''
         }),
     });
 });
@@ -149,7 +139,7 @@ events.on('order:open', () => {
 events.on(
     /^order\..*:changed/,
     (data: {
-        field: keyof Pick<IOrderView, 'address' | 'phone' | 'email'>;
+        field: keyof Pick<IOrder, 'address' | 'phone' | 'email'>;
         value: string;
     }) => {
         appData.setOrderField(data.field, data.value);
@@ -162,7 +152,7 @@ events.on('order:changed', (data: { payment: string; button: HTMLElement }) => {
     appData.validateOrder();
 });
 
-events.on('formErrors:changed', (errors: Partial<IOrderView>) => {
+events.on('formErrors:changed', (errors: Partial<IOrder>) => {
     const { email, phone, address, payment } = errors;
     order.valid = !payment && !address;
     order.errors = Object.values({ payment, address })

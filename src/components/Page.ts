@@ -1,17 +1,16 @@
+import { IPage } from "../types/types";
+import { ensureElement } from "../utils/utils";
 import { Component } from "./base/Component";
 import { IEvents } from "./base/events";
-import { IPageView } from "../types/index";
-import { ensureElement, createElement } from "../utils/utils";
 
-
-export class Page extends Component<IPageView> {
+export class Page extends Component<IPage> {
 	protected _counter: HTMLElement;
 	protected _gallery: HTMLElement;
 	protected _wrapper: HTMLElement;
 	protected _basket: HTMLElement;
 
 	constructor(container: HTMLElement, protected events: IEvents) {
-		super(container, events);
+		super(container);
 
 		this._wrapper = ensureElement<HTMLElement>('.page__wrapper');
 		this._gallery = ensureElement<HTMLElement>('.gallery');
@@ -28,14 +27,7 @@ export class Page extends Component<IPageView> {
 	}
 
 	set gallery(items: HTMLElement[]) {
-		this._gallery.innerHTML = '';
-		if (items.length) {
-			this._gallery.append(...items);
-		} else {
-			this._gallery.append(
-				createElement('p', { textContent: 'Товары не найдены' })
-			);
-		}
+		this._gallery.replaceChildren(...items);
 	}
 
 	set locked(value: boolean) {
