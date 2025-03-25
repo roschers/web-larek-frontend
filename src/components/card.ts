@@ -1,5 +1,5 @@
-import { ICard } from './../types/types';
-import { ICardActions } from "../types/types";
+import { ICard } from '../types';
+import { ICardActions } from "../types";
 import { ensureElement, formatNumber } from '../utils/utils';
 import { Component } from './base/Component';
 

@@ -7,7 +7,11 @@
     "allowJs": true,
     "experimentalDecorators": true,
     "moduleResolution": "node",
-    "forceConsistentCasingInFileNames": false
+    "forceConsistentCasingInFileNames": false,
+    "baseUrl": ".",
+    "paths": {
+      "*": ["src/*"]
+    }
   },
   "include": ["src/**/*.ts", "src/types/*.d.ts"]
 }

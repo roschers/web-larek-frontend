@@ -1,5 +1,5 @@
 import { Model } from "./base/Model";
-import { ICard, IOrder, IAppState, FormErrors } from "../types/types";
+import { ICard, IOrder, IAppState, FormErrors } from "../types";
 
 export class AppData extends Model<IAppState> {
     catalog: ICard[] = [];
@@ -47,6 +47,8 @@ export class AppData extends Model<IAppState> {
 			address: '',
 			payment: '',
 		};
+		this.formErrors = {};
+		this.events.emit('formErrors:changed', this.formErrors);
 	}
 
     getTotalPrice() {
@@ -90,6 +92,11 @@ export class AppData extends Model<IAppState> {
 
     setOrderPayment(value: string) {
 		this.order.payment = value;
+		if (!this.order.address) {
+			this.formErrors.address = `Необходимо указать адрес`;
+			this.events.emit('formErrors:changed', this.formErrors);
+		}
+		this.validateOrder();
 	}
 
 	setOrderAddress(value: string) {
@@ -102,6 +109,7 @@ export class AppData extends Model<IAppState> {
 
 	setOrderEmail(value: string) {
 		this.order.email = value;
+		
 	}
 
     setBasketToOrder() {
@@ -110,16 +118,29 @@ export class AppData extends Model<IAppState> {
 	}
     validateOrder() {
 		const errors: typeof this.formErrors = {};
+		
+		// Регулярное выражение для проверки email
+		const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+		
+		// Регулярное выражение для проверки телефона (формат +7 XXX XXX XX XX)
+		const phonePattern = /^\+7\s?\d{3}\s?\d{3}\s?\d{2}\s?\d{2}$/;
 
 		if (!this.order.email) {
 			errors.email = `Необходимо указать email`;
+		} else if (!emailPattern.test(this.order.email)) {
+			errors.email = `Email введен некорректно`;
 		}
+
 		if (!this.order.phone) {
 			errors.phone = `Необходимо указать номер телефона`;
+		} else if (!phonePattern.test(this.order.phone)) {
+			errors.phone = `Телефон должен быть в формате +7 XXX XXX XX XX`;
 		}
+
 		if (!this.order.address) {
 			errors.address = `Необходимо указать адрес`;
 		}
+
 		if (!this.order.payment) {
 			errors.payment = `Необходимо указать способ оплаты`;
 		}

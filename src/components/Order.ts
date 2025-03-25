@@ -1,4 +1,4 @@
-import { IOrder } from '../types/types';
+import { IOrder } from '../types';
 import { IEvents } from './base/events';
 import { Form } from './common/Form';
 

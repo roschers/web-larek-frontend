@@ -8,7 +8,7 @@ import { Basket } from './components/common/Basket';
 import { Modal } from './components/common/Modal';
 import { Order, Contacts } from './components/Order';
 import { Success } from './components/common/Success';
-import { ICard, IOrder } from './types/types';
+import { ICard, IOrder } from './types';
 import { API_URL, CDN_URL } from './utils/constants';
 import { cloneTemplate, ensureElement } from './utils/utils';
 
